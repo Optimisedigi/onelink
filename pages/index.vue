@@ -37,24 +37,9 @@
           <span> Publish </span>
           <icon name="ph:paper-plane-tilt-bold" class="h-4 w-4" />
         </button>
-        <a
-          href="https://github.com/fayazara/onelink"
-          target="_blank"
-          class="h-12 flex items-center space-x-2 px-4 border-r text-xs font-medium bg-white text-slate-700"
-        >
-          <span> Github </span>
-          <icon name="mdi:github" class="h-4 w-4" />
-        </a>
       </div>
     </div>
     <app-form-preview :data="data" />
-    <a
-      href="https://twitter.com/fayazara"
-      target="_blank"
-      class="absolute bottom-0 right-0 bg-white rounded-tl-lg shadow px-4 py-1 font-medium text-sm text-gray-500"
-    >
-      Made by Fayaz
-    </a>
   </div>
 </template>
 
@@ -93,26 +78,32 @@ const prefillDemoData = () => {
     ls: [
       {
         l: "My Website",
+        g: "Free tools",
         i: "ph:globe-duotone",
         u: "https://example.com",
       },
       {
         l: "Amazon wishlist",
+        g: "Free tools",
         i: "ant-design:amazon-outlined",
         u: "https://amazon.in",
       },
       {
         l: "React JS course",
+        g: "Free tools",
         i: "grommet-icons:reactjs",
         u: "https://reactjs.org/",
       },
       {
         l: "Donate for our cause",
+        g: "Growth agency",
         i: "iconoir:donate",
         u: "https://who.int",
       },
       {
         l: "Download my resume",
+        g: "Growth agency",
+        s: "This long description should be fully readable even at the bottom of the page.",
         i: "ph:file-pdf",
         u: "https://google.com",
       },

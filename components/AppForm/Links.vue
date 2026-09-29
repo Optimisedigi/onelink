@@ -1,77 +1,81 @@
 <template>
   <base-form-section title="Links" description="Add some links here">
-    <template #helpertext>
-      <p class="mt-1 text-xs text-gray-600">
-        Icon keys can be found in
-        <a class="underline" href="https://icones.js.org/"
-          >https://icones.js.org/</a
-        >.
-      </p>
-    </template>
     <draggable
       :list="modelValue"
-      item-key="link"
+      :item-key="getItemKey"
       class="list-group"
       ghost-class="ghost"
     >
       <template #item="{ element: link }">
         <div class="relative mb-6 group">
-          <button class="absolute top-2 -left-8">
+          <span aria-hidden="true" class="absolute top-2 -left-8">
             <icon
               name="radix-icons:drag-handle-dots-2"
               class="h-6 w-6 text-slate-500 drag-handle"
             />
-          </button>
+          </span>
           <button
+            type="button"
+            :aria-label="`Remove ${link.l || 'untitled'} link`"
             @click="removeLink(link)"
-            class="hidden group-hover:flex items-center justify-center h-6 w-6 rounded-full bg-slate-300 text-slate-600 absolute -right-3 -top-3"
+            class="flex items-center justify-center h-8 w-8 rounded-full bg-slate-200 text-slate-700 absolute -right-3 -top-3 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800"
           >
             <icon name="fluent:dismiss-24-regular" class="h-4 w-4" />
           </button>
           <div class="shadow sm:overflow-hidden sm:rounded-md">
             <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
               <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    for="name"
-                    class="block text-sm font-medium text-gray-700"
-                    >Icon Key (optional)</label
-                  >
-                  <input
-                    type="text"
-                    name="iconKey"
-                    id="iconKey"
-                    v-model="link.i"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label
-                    for="label"
-                    class="block text-sm font-medium text-gray-700"
-                    >Label</label
-                  >
-                  <input
-                    type="text"
-                    name="label"
-                    id="label"
-                    v-model="link.l"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Section (optional; repeat to group links)
+                    <input
+                      type="text"
+                      v-model="link.g"
+                      maxlength="80"
+                      placeholder="Free tools"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </label>
                 </div>
                 <div class="col-span-2">
-                  <label
-                    for="url"
-                    class="block text-sm font-medium text-gray-700"
-                    >URL</label
-                  >
-                  <input
-                    type="url"
-                    name="url"
-                    id="url"
-                    v-model="link.u"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
+                  <label class="block text-sm font-medium text-gray-700">
+                    Label
+                    <input
+                      type="text"
+                      v-model="link.l"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </label>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Description (optional)
+                    <textarea
+                      rows="2"
+                      v-model="link.s"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    ></textarea>
+                  </label>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Link image URL (optional, HTTPS)
+                    <input
+                      type="url"
+                      v-model="link.image"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </label>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-medium text-gray-700">
+                    URL
+                    <input
+                      type="url"
+                      v-model="link.u"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </label>
                 </div>
               </div>
               <p
@@ -87,6 +91,8 @@
     </draggable>
 
     <button
+      type="button"
+      aria-label="Add link"
       @click="appendLink"
       class="mt-8 border-2 text-slate-500 border-slate-300 rounded-lg block w-full py-2"
     >
@@ -100,10 +106,18 @@ const emit = defineEmits(["update:modelValue"]);
 const props = defineProps({
   modelValue: Array,
 });
+const itemKeys = new WeakMap();
+let nextItemKey = 0;
+const getItemKey = (link) => {
+  if (!itemKeys.has(link)) itemKeys.set(link, ++nextItemKey);
+  return itemKeys.get(link);
+};
 const appendLink = () => {
   props.modelValue.push({
-    i: "",
     l: "",
+    g: "",
+    s: "",
+    image: "",
     u: "",
   });
   emit("update:modelValue", props.modelValue);
