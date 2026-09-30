@@ -108,7 +108,7 @@ const socialLinks = computed(() => [
   max-width: 420px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 56px 20px 40px;
+  padding: 24px 20px 40px;
   display: flex;
   flex-direction: column;
 }
@@ -150,7 +150,8 @@ h1 {
   gap: var(--icon-gap);
   width: max-content;
   max-width: min(100%, calc(6 * var(--icon-size) + 5 * var(--icon-gap)));
-  margin: 6px auto 0;
+  /* The 44px tap area adds 12px above each 20px icon; pull it up so the gap looks tight. */
+  margin: -6px auto 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -171,6 +172,7 @@ h1 {
 .social-links a:hover { color: #17181a; }
 .social-links a:focus-visible { outline: 2px solid #44413c; outline-offset: 3px; }
 .link-groups { display: grid; gap: 26px; margin: 20px -8px 0; }
+.social-links + .link-groups { margin-top: 4px; }
 .section-title {
   margin: 0 0 10px;
   padding-left: 12px;
