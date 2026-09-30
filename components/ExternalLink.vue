@@ -49,6 +49,7 @@ const props = defineProps({
   description: { type: String, default: "" },
   image: { type: String, default: "" },
   icon: { type: String, default: "" },
+  siteIcon: { type: String, default: "" },
   url: { type: String, required: true },
 });
 
@@ -56,22 +57,19 @@ const safeUrl = computed(() => safeHttpsUrl(props.url));
 const safeImage = computed(() => safeHttpsUrl(props.image));
 const safeIcon = computed(() => /^[a-z][a-z0-9-]{0,31}:[a-z0-9][a-z0-9-]{0,63}$/.test(props.icon) ? props.icon : "");
 const faviconUrl = computed(() => safeUrl.value ? new URL('/favicon.ico', safeUrl.value).href : '');
-const failedImage = ref('');
-const failedFavicon = ref('');
-const imageSource = computed(() => {
-  if (safeImage.value && failedImage.value !== safeImage.value) return safeImage.value;
-  if (!safeIcon.value && faviconUrl.value && failedFavicon.value !== faviconUrl.value) return faviconUrl.value;
-  return '';
-});
+// Tried in order; a failed source is skipped. Attached image, then (without a
+// legacy icon) the site's declared icon, then /favicon.ico, then the initial.
+const candidates = computed(() => [
+  safeImage.value,
+  ...(safeIcon.value ? [] : [safeHttpsUrl(props.siteIcon), faviconUrl.value]),
+].filter(Boolean));
+const failed = ref([]);
+const imageSource = computed(() => candidates.value.find((source) => !failed.value.includes(source)) || '');
 const imageElement = ref(null);
 function markFailedImage(source) {
-  if (source === safeImage.value) failedImage.value = source;
-  if (source === faviconUrl.value) failedFavicon.value = source;
+  if (source && !failed.value.includes(source)) failed.value = [...failed.value, source];
 }
-watch([safeImage, safeUrl], () => {
-  failedImage.value = '';
-  failedFavicon.value = '';
-});
+watch(candidates, () => { failed.value = []; });
 onMounted(() => {
   if (imageElement.value?.complete && imageElement.value.currentSrc && imageElement.value.naturalWidth === 0) {
     markFailedImage(imageElement.value.getAttribute('src'));
@@ -79,7 +77,7 @@ onMounted(() => {
 });
 const hasDescription = computed(() => props.description.trim().length > 0);
 const preview = computed(() => props.description.trim().replace(/\s+/g, " "));
-const expanded = ref(true);
+const expanded = ref(false);
 const descriptionId = useId();
 </script>
 <style scoped>

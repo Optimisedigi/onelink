@@ -4,6 +4,7 @@ import { checkMutation } from '../../utils/checkMutation.js';
 import { validateProfile } from '../../utils/profileValidation.js';
 import { readBoundedJson } from '../../utils/readBoundedJson.js';
 import { saveProfile } from '../../utils/blobProfile.js';
+import { addDiscoveredFavicons } from '../../utils/discoverFavicon.js';
 
 export default defineEventHandler(async (event) => {
   checkMutation(event);
@@ -14,5 +15,9 @@ export default defineEventHandler(async (event) => {
   }
   const problem = validateProfile(body.profile);
   if (problem) throw createError({ statusCode: 400, statusMessage: problem });
-  return await saveProfile(body.profile, body.expectedVersion);
+  const profile = await addDiscoveredFavicons(body.profile);
+  // Discovered icon URLs could exceed field limits; drop any that fail validation.
+  if (validateProfile(profile)) for (const link of profile.ls) delete link.fi;
+  const saved = await saveProfile(profile, body.expectedVersion);
+  return { ...saved, favicons: profile.ls.map((link) => link.fi || '') };
 });

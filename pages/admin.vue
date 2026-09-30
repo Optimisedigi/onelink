@@ -75,7 +75,14 @@ async function save() {
   try {
     const result = await $fetch('/api/admin/profile', { method: 'PUT', body: { profile: JSON.parse(snapshot), expectedVersion: version.value } });
     version.value = result.version;
-    status.value = JSON.stringify(data.value) === snapshot ? 'Saved. View your profile at /; updates can take up to a minute.' : 'Saved earlier changes. You still have unsaved changes.';
+    const unchanged = JSON.stringify(data.value) === snapshot;
+    // Keep the draft in step with the saved site icons so the preview matches and
+    // the next Save does not look them up again.
+    if (unchanged && Array.isArray(result.favicons) && result.favicons.length === data.value.ls.length) {
+      data.value.ls.forEach((link, index) => { if (result.favicons[index]) link.fi = result.favicons[index]; });
+      await nextTick(); // let the change watcher run while saving, so it is not reported as unsaved
+    }
+    status.value = unchanged ? 'Saved. View your profile at /; updates can take up to a minute.' : 'Saved earlier changes. You still have unsaved changes.';
   } catch (error) {
     status.value = error.statusCode === 409 ? 'Another tab saved changes. Export your draft before reloading and merging.' : error.data?.statusMessage || 'Save failed. Your draft is still here.';
   } finally { saving.value = false; }

@@ -2,7 +2,7 @@ import { safeEmailHref, safeHttpsUrl, safeWhatsappHref } from '../../utils/safeL
 
 const fields = { n: 120, d: 1000, i: 2048, f: 2048, t: 2048, ig: 2048, gh: 2048, tg: 2048, l: 2048, e: 254, w: 40, y: 2048 };
 const social = ['f', 't', 'ig', 'gh', 'tg', 'l', 'y'];
-const linkFields = { l: 160, g: 80, s: 1000, i: 120, image: 2048, u: 2048 };
+const linkFields = { l: 160, g: 80, s: 1000, i: 120, image: 2048, fi: 2048, u: 2048 };
 const plain = (value) => value && typeof value === 'object' && !Array.isArray(value);
 
 export function validateProfile(input) {
@@ -22,6 +22,7 @@ export function validateProfile(input) {
     }
     if (!link.l?.trim() || !safeHttpsUrl(link.u)) return `Link ${index + 1}: add a label and an HTTPS URL`;
     if (link.image && !safeHttpsUrl(link.image)) return `Link ${index + 1}: image must be an HTTPS URL`;
+    if (link.fi && !safeHttpsUrl(link.fi)) return `Link ${index + 1}: invalid site icon`;
   }
   if (Buffer.byteLength(JSON.stringify(input), 'utf8') > 60000) return 'Profile is too large';
   return null;

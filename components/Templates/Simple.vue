@@ -38,6 +38,7 @@
               :description="typeof link.s === 'string' ? link.s : ''"
               :image="typeof link.image === 'string' ? link.image : ''"
               :icon="typeof link.i === 'string' ? link.i : ''"
+              :site-icon="typeof link.fi === 'string' ? link.fi : ''"
               :url="link.u"
             />
           </ul>
