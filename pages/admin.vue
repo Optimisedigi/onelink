@@ -8,7 +8,7 @@
           <h1 class="text-xl font-semibold mr-auto">Edit profile</h1>
           <button type="button" class="underline" @click="copyLink">Copy profile preview link</button>
           <button type="button" class="underline" @click="exportProfile">Export profile JSON</button>
-          <button type="button" class="underline" @click="logout">Sign out</button>
+          <button type="button" :disabled="uploadsPending > 0" class="underline disabled:opacity-50" @click="logout">Sign out</button>
         </div>
         <div class="flex-1 overflow-y-auto p-5 sm:p-8">
           <app-form-profile v-model:name="data.n" v-model:desc="data.d" v-model:image="data.i" />
@@ -19,7 +19,7 @@
             v-model:email="data.e" v-model:whatsapp="data.w" v-model:youtube="data.y"
           />
           <app-form-hr />
-          <app-form-links v-model="data.ls" />
+          <app-form-links v-model="data.ls" allow-uploads @upload-state="uploadsPending += $event" />
           <section class="mt-8 max-w-xl space-y-3">
             <h2 class="font-semibold">Import an old profile link</h2>
             <label class="block text-sm">Old /1?data= link
@@ -30,13 +30,13 @@
             <div v-if="importDraft" class="border bg-white p-4 space-y-2">
               <p>Replace your unsaved draft with <strong>{{ importDraft.n || 'Untitled profile' }}</strong> and {{ importDraft.ls.length }} links?</p>
               <div class="max-h-96 overflow-y-auto border" aria-label="Imported profile preview"><templates-simple :acc="importDraft" /></div>
-              <button type="button" class="underline" @click="confirmImport">Replace draft with this import</button>
+              <button type="button" :disabled="uploadsPending > 0" class="underline disabled:opacity-50" @click="confirmImport">Replace draft with this import</button>
               <button type="button" class="ml-4 underline" @click="importDraft = null">Cancel</button>
             </div>
           </section>
         </div>
         <div class="border-t bg-white p-4 flex flex-wrap gap-4 items-center">
-          <button type="button" :disabled="saving" @click="save" class="px-5 py-2 bg-slate-800 text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 disabled:opacity-50">{{ saving ? 'Saving…' : 'Save' }}</button>
+          <button type="button" :disabled="saving || uploadsPending > 0" @click="save" class="px-5 py-2 bg-slate-800 text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 disabled:opacity-50">{{ saving ? 'Saving…' : uploadsPending > 0 ? 'Uploading images…' : 'Save' }}</button>
           <p role="status" aria-live="polite" class="text-sm">{{ status }}</p>
         </div>
       </div>
@@ -53,6 +53,7 @@ const version = ref(null);
 const pending = ref(true);
 const loadError = ref('');
 const saving = ref(false);
+const uploadsPending = ref(0);
 const status = ref('');
 const legacyUrl = ref('');
 const importError = ref('');
@@ -67,6 +68,7 @@ pending.value = false;
 watch(data, () => { if (!saving.value) status.value = 'Unsaved changes'; }, { deep: true });
 
 async function save() {
+  if (saving.value || uploadsPending.value > 0) return;
   saving.value = true;
   status.value = 'Saving…';
   const snapshot = JSON.stringify(data.value);

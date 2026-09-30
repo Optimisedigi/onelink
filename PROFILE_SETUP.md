@@ -10,4 +10,10 @@ The profile is public data held in one Vercel Blob named `linkfriend/official-pr
 4. Verify wrong password, logout, expired and forged sessions, cross-origin write rejection, invalid destinations, two-tab edit conflict, first Save and refresh, old-link import, JSON export, legacy links, and a new browser session. Test phone and desktop widths plus keyboard operation. Verify anonymous users cannot edit even with direct API requests.
 5. Request a timed restore drill from the provider into a disposable environment before claiming recoverability. The owner-held JSON export and previous-version copies help recovery, but neither proves a provider restore works.
 
+## Link image attachments
+
+The `/admin` editor can attach PNG, JPEG or WebP files up to 2 MB through the owner-only `/api/admin/link-image` endpoint. Image URL entry remains available in both editors. Uploads use unique filenames in `linkfriend/link-images/` in the existing public Blob store; filenames supplied by the browser are not used. The server checks the session, same-origin request, byte limit and image-format headers. SVG and other formats are rejected.
+
+Uploading stores the image immediately, but attaching or removing it from the public profile still requires Save. Removing an image from a link does not delete its Blob. Unused uploads have no automatic cleanup and can contribute to Blob charges. Upload only images you have permission to publish, never confidential material. Profile-history JSON copies reference the images rather than backing up their bytes.
+
 No Supabase project or charge is required. Blob usage may still be charged under the existing Vercel plan. Stage one and stage two are separate production deployments, each requiring explicit authorization. No deployment, commit or push has been performed.

@@ -17,6 +17,7 @@
           <button
             type="button"
             :aria-label="`Remove ${link.l || 'untitled'} link`"
+            :disabled="uploadsPending > 0"
             @click="removeLink(link)"
             class="flex items-center justify-center h-8 w-8 rounded-full bg-slate-200 text-slate-700 absolute -right-3 -top-3 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800"
           >
@@ -63,9 +64,11 @@
                     <input
                       type="url"
                       v-model="link.image"
+                      :disabled="uploadsPending > 0"
                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     />
                   </label>
+                  <AppFormLinkImageUpload v-if="allowUploads" v-model="link.image" :label="link.l" @upload-state="updateUploads" />
                 </div>
                 <div class="col-span-2">
                   <label class="block text-sm font-medium text-gray-700">
@@ -102,10 +105,16 @@
 </template>
 <script setup>
 import draggable from "vuedraggable";
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "upload-state"]);
 const props = defineProps({
   modelValue: Array,
+  allowUploads: { type: Boolean, default: false },
 });
+const uploadsPending = ref(0);
+function updateUploads(change) {
+  uploadsPending.value += change;
+  emit('upload-state', change);
+}
 const itemKeys = new WeakMap();
 let nextItemKey = 0;
 const getItemKey = (link) => {

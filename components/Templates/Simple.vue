@@ -149,7 +149,7 @@ h1 {
   gap: var(--icon-gap);
   width: max-content;
   max-width: min(100%, calc(6 * var(--icon-size) + 5 * var(--icon-gap)));
-  margin: 20px auto 0;
+  margin: 6px auto 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -180,7 +180,7 @@ h1 {
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
-.profile-links { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.profile-links { display: grid; gap: 4px; list-style: none; padding: 0; margin: 0; }
 .profile-footer {
   margin-top: auto;
   padding-top: 32px;

@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { createError } from 'h3';
 
 const pathname = 'linkfriend/official-profile.json';
-function options() {
+export function blobOptions() {
   if (!(process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) && !process.env.BLOB_READ_WRITE_TOKEN) {
     throw createError({ statusCode: 503, statusMessage: 'Profile storage is not configured' });
   }
@@ -12,7 +12,7 @@ function options() {
   return { access, abortSignal: AbortSignal.timeout(10000) };
 }
 export async function readProfile() {
-  const opts = options();
+  const opts = blobOptions();
   try {
     // Public get() cannot bypass the CDN. The metadata API supplies the current
     // ETag so a versioned URL does not reuse a previously cached public response.
@@ -40,7 +40,7 @@ export async function readProfile() {
   }
 }
 export async function saveProfile(profile, expectedVersion) {
-  const opts = options();
+  const opts = blobOptions();
   const current = await readProfile();
   if (current.version !== expectedVersion) throw createError({ statusCode: 409, statusMessage: 'Profile changed in another tab. Export your draft before reloading.' });
   try {
