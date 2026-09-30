@@ -3,14 +3,14 @@
     <div v-if="pending" class="p-8">Loading editor…</div>
     <div v-else-if="loadError" class="p-8" role="alert">{{ loadError }} <NuxtLink to="/login" class="underline">Sign in</NuxtLink></div>
     <div v-else class="editor grid grid-cols-1 lg:grid-cols-3 lg:divide-x">
-      <div class="lg:col-span-2 flex flex-col min-w-0">
-        <div class="p-4 bg-white border-b flex flex-wrap gap-3 items-center">
+      <div class="h-dvh lg:col-span-2 flex flex-col min-h-0 min-w-0">
+        <div class="shrink-0 p-4 bg-white border-b flex flex-wrap gap-3 items-center">
           <h1 class="text-xl font-semibold mr-auto">Edit profile</h1>
           <button type="button" class="underline" @click="copyLink">Copy profile preview link</button>
           <button type="button" class="underline" @click="exportProfile">Export profile JSON</button>
           <button type="button" :disabled="uploadsPending > 0" class="underline disabled:opacity-50" @click="logout">Sign out</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-5 sm:p-8">
+        <div class="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8" @focusin="$event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })">
           <app-form-profile v-model:name="data.n" v-model:desc="data.d" v-model:image="data.i" />
           <app-form-hr />
           <app-form-social-links
@@ -35,7 +35,7 @@
             </div>
           </section>
         </div>
-        <div class="border-t bg-white p-4 flex flex-wrap gap-4 items-center">
+        <div class="shrink-0 border-t bg-white p-4 flex flex-wrap gap-4 items-center">
           <button type="button" :disabled="saving || uploadsPending > 0" @click="save" class="px-5 py-2 bg-slate-800 text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 disabled:opacity-50">{{ saving ? 'Saving…' : uploadsPending > 0 ? 'Uploading images…' : 'Save' }}</button>
           <p role="status" aria-live="polite" class="text-sm">{{ status }}</p>
         </div>
