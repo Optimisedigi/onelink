@@ -3,6 +3,12 @@ import { randomBytes } from 'node:crypto';
 import { createError } from 'h3';
 
 const pathname = 'linkfriend/official-profile.json';
+// The CDN marks compressed responses with a weak ETag (W/"…") for the same version
+// that head() reports as a strong ETag, so compare the opaque value only.
+const sameVersion = (a, b) => {
+  const opaque = (tag) => String(tag || '').replace(/^W\//, '').replace(/^"|"$/g, '');
+  return opaque(a) !== '' && opaque(a) === opaque(b);
+};
 export function blobOptions() {
   if (!(process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) && !process.env.BLOB_READ_WRITE_TOKEN) {
     throw createError({ statusCode: 503, statusMessage: 'Profile storage is not configured' });
@@ -28,7 +34,7 @@ export async function readProfile() {
     const target = metadata ? `${metadata.url}?v=${encodeURIComponent(metadata.etag)}` : pathname;
     const result = await get(target, { ...opts, useCache: false });
     if (!result && !metadata) return { profile: null, version: null };
-    if (!result || result.statusCode !== 200 || result.blob.size > 65536 || (metadata && result.blob.etag !== metadata.etag)) {
+    if (!result || result.statusCode !== 200 || result.blob.size > 65536 || (metadata && !sameVersion(result.blob.etag, metadata.etag))) {
       throw new Error('Current profile version is not available yet');
     }
     const profile = JSON.parse(await new Response(result.stream).text());
@@ -36,6 +42,7 @@ export async function readProfile() {
     return { profile, version: metadata?.etag || result.blob.etag };
   } catch (error) {
     if (error.statusCode) throw error;
+    console.error(JSON.stringify({ operation: 'profile-read', outcome: 'failed', error: error.name, message: String(error.message).slice(0, 200) }));
     throw createError({ statusCode: 503, statusMessage: 'Profile storage unavailable' });
   }
 }
