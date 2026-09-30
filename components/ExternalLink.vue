@@ -4,15 +4,17 @@
       <a :href="safeUrl" target="_blank" rel="noopener noreferrer" class="link-target">
         <span class="link-visual" aria-hidden="true">
           <img
-            v-if="safeImage && failedImage !== safeImage"
+            v-if="imageSource"
+            :key="imageSource"
             ref="imageElement"
-            :src="safeImage"
+            :src="imageSource"
             alt=""
             width="32"
             height="32"
             loading="lazy"
             decoding="async"
-            @error="failedImage = safeImage"
+            referrerpolicy="no-referrer"
+            @error="markFailedImage($event.currentTarget.getAttribute('src'))"
           />
           <Icon v-else-if="safeIcon" :name="safeIcon" class="link-icon" />
           <span v-else>{{ label.trim().charAt(0).toUpperCase() }}</span>
@@ -53,11 +55,26 @@ const props = defineProps({
 const safeUrl = computed(() => safeHttpsUrl(props.url));
 const safeImage = computed(() => safeHttpsUrl(props.image));
 const safeIcon = computed(() => /^[a-z][a-z0-9-]{0,31}:[a-z0-9][a-z0-9-]{0,63}$/.test(props.icon) ? props.icon : "");
-const failedImage = ref("");
+const faviconUrl = computed(() => safeUrl.value ? new URL('/favicon.ico', safeUrl.value).href : '');
+const failedImage = ref('');
+const failedFavicon = ref('');
+const imageSource = computed(() => {
+  if (safeImage.value && failedImage.value !== safeImage.value) return safeImage.value;
+  if (!safeIcon.value && faviconUrl.value && failedFavicon.value !== faviconUrl.value) return faviconUrl.value;
+  return '';
+});
 const imageElement = ref(null);
+function markFailedImage(source) {
+  if (source === safeImage.value) failedImage.value = source;
+  if (source === faviconUrl.value) failedFavicon.value = source;
+}
+watch([safeImage, safeUrl], () => {
+  failedImage.value = '';
+  failedFavicon.value = '';
+});
 onMounted(() => {
-  if (imageElement.value?.complete && imageElement.value.naturalWidth === 0) {
-    failedImage.value = safeImage.value;
+  if (imageElement.value?.complete && imageElement.value.currentSrc && imageElement.value.naturalWidth === 0) {
+    markFailedImage(imageElement.value.getAttribute('src'));
   }
 });
 const hasDescription = computed(() => props.description.trim().length > 0);

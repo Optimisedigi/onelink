@@ -6,7 +6,7 @@
       <div class="h-dvh lg:col-span-2 flex flex-col min-h-0 min-w-0">
         <div class="shrink-0 p-4 bg-white border-b flex flex-wrap gap-3 items-center">
           <h1 class="text-xl font-semibold mr-auto">Edit profile</h1>
-          <button type="button" class="underline" @click="copyLink">Copy profile preview link</button>
+          <button type="button" class="underline" @click="copyLink">Copy profile link</button>
           <button type="button" class="underline" @click="exportProfile">Export profile JSON</button>
           <button type="button" :disabled="uploadsPending > 0" class="underline disabled:opacity-50" @click="logout">Sign out</button>
         </div>
@@ -75,7 +75,7 @@ async function save() {
   try {
     const result = await $fetch('/api/admin/profile', { method: 'PUT', body: { profile: JSON.parse(snapshot), expectedVersion: version.value } });
     version.value = result.version;
-    status.value = JSON.stringify(data.value) === snapshot ? 'Saved. View /official after up to a minute; the homepage has not switched yet.' : 'Saved earlier changes. You still have unsaved changes.';
+    status.value = JSON.stringify(data.value) === snapshot ? 'Saved. View your profile at /; updates can take up to a minute.' : 'Saved earlier changes. You still have unsaved changes.';
   } catch (error) {
     status.value = error.statusCode === 409 ? 'Another tab saved changes. Export your draft before reloading and merging.' : error.data?.statusMessage || 'Save failed. Your draft is still here.';
   } finally { saving.value = false; }
@@ -87,8 +87,8 @@ async function logout() {
   } catch { status.value = 'Sign out failed. Try again.'; }
 }
 async function copyLink() {
-  try { await navigator.clipboard.writeText(window.location.origin + '/official'); status.value = 'Profile preview link copied.'; }
-  catch { status.value = 'Could not copy. Open /official to preview the saved profile.'; }
+  try { await navigator.clipboard.writeText(window.location.origin + '/'); status.value = 'Profile link copied.'; }
+  catch { status.value = 'Could not copy. Open / to view the saved profile.'; }
 }
 function exportProfile() {
   const blob = new Blob([JSON.stringify(data.value, null, 2)], { type: 'application/json' });

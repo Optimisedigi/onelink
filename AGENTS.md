@@ -1,6 +1,6 @@
 # Project notes
 
-OneLink is a Nuxt 4 link-in-bio app. Profiles are encoded into the `data` query parameter of `/1`; the editor and preview live on `/`.
+OneLink is a Nuxt 4 link-in-bio app. The saved public profile lives on `/`, with its owner editor and preview on `/admin`. `/official` redirects to `/`. Legacy profiles remain encoded into the `data` query parameter of `/1`.
 
 ## Commands
 
@@ -10,7 +10,8 @@ OneLink is a Nuxt 4 link-in-bio app. Profiles are encoded into the `data` query 
 
 ## Where to work
 
-- `pages/index.vue`: editor state, demo profile, and publish action.
+- `pages/index.vue`: loads and renders the saved public profile.
+- `pages/admin.vue`: owner editor state, image attachments, import/export, and Save action.
 - `components/AppForm/Links.vue`: editable link fields; optional section names are stored as `g` on each link.
 - `components/AppForm/Preview.vue`: scrollable phone preview.
 - `pages/1.vue`: decodes a published profile, then renders `components/Templates/Simple.vue`.

@@ -5,8 +5,9 @@
       :item-key="getItemKey"
       class="list-group"
       ghost-class="ghost"
+      handle=".drag-handle"
     >
-      <template #item="{ element: link }">
+      <template #item="{ element: link, index }">
         <div class="relative mb-6 group">
           <span aria-hidden="true" class="absolute top-2 -left-8">
             <icon
@@ -25,6 +26,23 @@
           </button>
           <div class="shadow sm:overflow-hidden sm:rounded-md">
             <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+              <div>
+                <label class="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-700">
+                  Position
+                  <input
+                    type="number" min="1" step="1" inputmode="numeric"
+                    :max="modelValue.length" :value="index + 1"
+                    :aria-label="`Position for ${link.l || 'untitled'} link`"
+                    :aria-invalid="orderError?.link === link ? 'true' : undefined"
+                    :aria-describedby="orderError?.link === link ? positionErrorId : undefined"
+                    class="min-h-11 w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    @change="moveLink(link, $event)"
+                    @keydown.enter.prevent="$event.target.blur()"
+                  />
+                  <span>of {{ modelValue.length }}</span>
+                </label>
+                <p v-if="orderError?.link === link" :id="positionErrorId" role="alert" class="mt-2 text-sm text-red-800">{{ orderError.message }}</p>
+              </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                   <label class="block text-sm font-medium text-gray-700">
@@ -105,12 +123,36 @@
 </template>
 <script setup>
 import draggable from "vuedraggable";
+import { useId } from 'vue';
 const emit = defineEmits(["update:modelValue", "upload-state"]);
 const props = defineProps({
   modelValue: Array,
   allowUploads: { type: Boolean, default: false },
 });
 const uploadsPending = ref(0);
+const orderError = ref(null);
+const positionErrorId = useId();
+async function moveLink(link, event) {
+  const input = event.target;
+  const from = props.modelValue.indexOf(link);
+  const position = input.valueAsNumber;
+  if (from < 0) return;
+  if (!Number.isInteger(position) || position < 1 || position > props.modelValue.length) {
+    input.value = String(from + 1);
+    orderError.value = { link, message: `Use a whole-number position from 1 to ${props.modelValue.length}.` };
+    input.focus({ preventScroll: true });
+    return;
+  }
+  orderError.value = null;
+  if (position === from + 1) return;
+  const reordered = [...props.modelValue];
+  reordered.splice(from, 1);
+  reordered.splice(position - 1, 0, link);
+  emit('update:modelValue', reordered);
+  await nextTick();
+  input.focus({ preventScroll: true });
+  input.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
 function updateUploads(change) {
   uploadsPending.value += change;
   emit('upload-state', change);

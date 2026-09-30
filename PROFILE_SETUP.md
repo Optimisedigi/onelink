@@ -1,6 +1,6 @@
 # Single-owner profile setup (production-only staged rollout)
 
-Stage one keeps the current production editor at `/`, adds the protected `/admin` editor and a noindex saved-profile preview at `/official`. Only stage two moves the saved profile to `/` and removes the staging preview after login, Blob access, saved profile and HTTPS rendering have been verified. Copy the current Publish URL to a private note **before refreshing the old editor**; there is no saved record to recover from the server.
+The homepage-switch implementation renders the saved public profile at `/`. `/official` redirects permanently to `/`, `/admin` remains the password-protected editor, and `/1?data=…` remains a legacy unverified profile. The admin Copy profile link action copies the domain root. Existing legacy links still work, but the old URL-only homepage editor is no longer available after this switch is deployed. Before refreshing an old editor tab, copy its Publish URL to a private note, import it in `/admin`, Save and verify the saved profile.
 
 The profile is public data held in one Vercel Blob named `linkfriend/official-profile.json`. The app checks a password using a server-only scrypt hash and issues a 12-hour signed, HttpOnly cookie. Blob does **not** provide user authentication. The app never stores the password or session secret in Blob. A copy of the previous blob is written under `linkfriend/profile-history/` before every overwrite; these copies use additional storage and are **not a tested provider backup**. No automatic cleanup is configured. Logout removes the browser cookie, but a copied token remains usable until its 12-hour expiry; rotate `OWNER_SESSION_SECRET` to invalidate all sessions.
 
@@ -10,10 +10,14 @@ The profile is public data held in one Vercel Blob named `linkfriend/official-pr
 4. Verify wrong password, logout, expired and forged sessions, cross-origin write rejection, invalid destinations, two-tab edit conflict, first Save and refresh, old-link import, JSON export, legacy links, and a new browser session. Test phone and desktop widths plus keyboard operation. Verify anonymous users cannot edit even with direct API requests.
 5. Request a timed restore drill from the provider into a disposable environment before claiming recoverability. The owner-held JSON export and previous-version copies help recovery, but neither proves a provider restore works.
 
+## Link ordering
+
+Each link has a Position field showing its place out of the total link count. Enter a whole number in range and press Enter, or leave the field, to move the link there. Dragging by the dotted handle still works. Reordering changes the draft; press Save to publish the new order.
+
 ## Link image attachments
 
-The `/admin` editor can attach PNG, JPEG or WebP files up to 2 MB through the owner-only `/api/admin/link-image` endpoint. Image URL entry remains available in both editors. Uploads use unique filenames in `linkfriend/link-images/` in the existing public Blob store; filenames supplied by the browser are not used. The server checks the session, same-origin request, byte limit and image-format headers. SVG and other formats are rejected.
+The `/admin` editor can attach PNG, JPEG or WebP files up to 2 MB through the owner-only `/api/admin/link-image` endpoint. Image URL entry remains available in the admin editor. When no custom image or legacy icon is set, links load the destination website's `/favicon.ico` directly in the browser, without sending the profile page as a referrer. An attached image overrides this default; clearing it restores the favicon or existing legacy icon. Missing favicons fall back to the link's initial. No server-side website fetching or third-party favicon service is used. Uploads use unique filenames in `linkfriend/link-images/` in the existing public Blob store; filenames supplied by the browser are not used. The server checks the session, same-origin request, byte limit and image-format headers. SVG and other formats are rejected.
 
 Uploading stores the image immediately, but attaching or removing it from the public profile still requires Save. Removing an image from a link does not delete its Blob. Unused uploads have no automatic cleanup and can contribute to Blob charges. Upload only images you have permission to publish, never confidential material. Profile-history JSON copies reference the images rather than backing up their bytes.
 
-No Supabase project or charge is required. Blob usage may still be charged under the existing Vercel plan. Stage one and stage two are separate production deployments, each requiring explicit authorization. No deployment, commit or push has been performed.
+No Supabase project or charge is required. Blob usage may still be charged under the existing Vercel plan. The saved editor and homepage switch are separate production deployments. Commit, push and deployment each require explicit authorization; local changes do not update the live domain.
