@@ -92,8 +92,8 @@ export function pickIcon(html, pageUrl) {
   return candidates[0]?.url || '';
 }
 
-export async function discoverFavicon(pageUrl) {
-  const signal = AbortSignal.timeout(timeoutMs);
+export async function discoverFavicon(pageUrl, budget) {
+  const signal = budget ? AbortSignal.any([AbortSignal.timeout(timeoutMs), budget]) : AbortSignal.timeout(timeoutMs);
   let current = safeHttpsUrl(pageUrl);
   for (let hop = 0; current && hop <= maxRedirects; hop += 1) {
     const parsed = new URL(current);
@@ -111,12 +111,12 @@ export async function discoverFavicon(pageUrl) {
 export async function addDiscoveredFavicons(profile) {
   const pending = profile.ls.filter((link) => !link.image && !link.i && !link.fi);
   const started = Date.now();
+  const budget = AbortSignal.timeout(8000); // hard cap for the whole Save
   let found = 0;
-  for (let index = 0; index < pending.length; index += 6) {
-    if (Date.now() - started > 8000) break;
+  for (let index = 0; index < pending.length && !budget.aborted; index += 6) {
     await Promise.all(pending.slice(index, index + 6).map(async (link) => {
       try {
-        const icon = await discoverFavicon(link.u);
+        const icon = await discoverFavicon(link.u, budget);
         if (icon) { link.fi = icon; found += 1; }
       } catch { /* unreachable site: keep fallback */ }
     }));
