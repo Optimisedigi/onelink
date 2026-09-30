@@ -67,6 +67,29 @@ else if (stored.value) {
 pending.value = false;
 watch(data, () => { if (!saving.value) status.value = 'Unsaved changes'; }, { deep: true });
 
+// Look up missing site icons once the editor opens, so the preview shows them.
+// They are added to the draft only; Save publishes them.
+let iconLookup;
+onMounted(async () => {
+  const needing = data.value.ls.filter((link) => !link.image && !link.i && !link.fi && /^https:\/\//i.test(link.u || ''));
+  if (loadError.value || !needing.length) return;
+  const urls = needing.map((link) => link.u);
+  iconLookup = new AbortController();
+  try {
+    const { icons } = await $fetch('/api/admin/favicons', { method: 'POST', body: { urls }, signal: iconLookup.signal, timeout: 15000, retry: 0 });
+    let added = 0;
+    needing.forEach((link, index) => {
+      // Skip links edited or given an image while the lookup was running.
+      if (icons?.[index] && link.u === urls[index] && !link.image && !link.i && !link.fi) { link.fi = icons[index]; added += 1; }
+    });
+    if (added) {
+      await nextTick();
+      if (!saving.value) status.value = `Found site icons for ${added} link${added === 1 ? '' : 's'}. Save to publish them.`;
+    }
+  } catch { /* preview only: Save still looks icons up */ }
+});
+onBeforeUnmount(() => iconLookup?.abort());
+
 async function save() {
   if (saving.value || uploadsPending.value > 0) return;
   saving.value = true;
