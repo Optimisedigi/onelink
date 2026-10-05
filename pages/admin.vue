@@ -11,6 +11,48 @@
           <button type="button" :disabled="uploadsPending > 0" class="underline disabled:opacity-50" @click="logout">Sign out</button>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8" @focusin="$event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })">
+          <details class="mb-8 rounded-md bg-white shadow">
+            <summary class="cursor-pointer p-4 font-semibold">Visits and clicks<span class="ml-2 font-normal text-slate-600">{{ statsSummary }}</span></summary>
+            <div class="border-t p-4 space-y-3">
+              <p v-if="statsError" role="alert" class="text-red-800">{{ statsError }}</p>
+              <p v-else-if="stats && !stats.configured">Visit counting is not connected yet. It starts once the counter database is set up.</p>
+              <div v-else-if="stats" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <caption class="sr-only">Profile visits and clicks per link</caption>
+                  <thead>
+                    <tr class="text-left text-slate-600">
+                      <th scope="col" class="py-2 pr-4 font-medium">Item</th>
+                      <th scope="col" class="py-2 pr-4 font-medium text-right whitespace-nowrap">7 days</th>
+                      <th scope="col" class="py-2 pr-4 font-medium text-right whitespace-nowrap">30 days</th>
+                      <th scope="col" class="py-2 font-medium text-right whitespace-nowrap">All time</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y">
+                    <tr class="font-semibold">
+                      <th scope="row" class="py-2 pr-4 text-left">Profile visits</th>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ stats.views.last7 }}</td>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ stats.views.last30 }}</td>
+                      <td class="py-2 text-right tabular-nums">{{ stats.views.all }}</td>
+                    </tr>
+                    <tr v-for="(link, index) in stats.links" :key="index">
+                      <th scope="row" class="py-2 pr-4 text-left font-normal">
+                        <span class="block break-words">{{ link.label }}<span v-if="link.kind === 'social'" class="text-slate-600"> (social icon)</span></span>
+                        <span v-if="link.section" class="block text-xs text-slate-600">{{ link.section }}</span>
+                        <span v-if="link.sharedAddress" class="block text-xs text-slate-600">Shares its address with another link, so they share one count.</span>
+                      </th>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ link.clicks.last7 }}</td>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ link.clicks.last30 }}</td>
+                      <td class="py-2 text-right tabular-nums">{{ link.clicks.all }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p v-if="!stats.links.length" class="py-2 text-slate-600">No saved links yet.</p>
+              </div>
+              <p v-else>Loading…</p>
+              <p class="text-xs text-slate-600">Counts are approximate. Each page load counts as a visit; your own visits while signed in, and most bots, are not counted, and some ad blockers hide visits. Clicks count only for saved links and are tracked by address, so changing a link's address starts a new count. Days are in UTC. No visitor details are stored.</p>
+              <button type="button" class="underline disabled:opacity-50" :disabled="statsLoading" @click="loadStats">{{ statsLoading ? 'Refreshing…' : 'Refresh' }}</button>
+            </div>
+          </details>
           <app-form-profile v-model:name="data.n" v-model:desc="data.d" v-model:image="data.i" />
           <app-form-hr />
           <app-form-social-links
@@ -58,6 +100,17 @@ const status = ref('');
 const legacyUrl = ref('');
 const importError = ref('');
 const importDraft = ref(null);
+const stats = ref(null);
+const statsError = ref('');
+const statsLoading = ref(false);
+const statsSummary = computed(() => {
+  if (statsError.value) return '(unavailable)';
+  if (!stats.value) return '';
+  if (!stats.value.configured) return '(not connected)';
+  const views = stats.value.views.last30;
+  const clicks = stats.value.links.reduce((sum, link) => sum + link.clicks.last30, 0);
+  return `${views} visit${views === 1 ? '' : 's'} and ${clicks} click${clicks === 1 ? '' : 's'} in the last 30 days`;
+});
 const { data: stored, error } = await useFetch('/api/admin/profile', { key: 'owner-profile', cache: 'no-store' });
 if (error.value) loadError.value = error.value.statusCode === 401 ? 'Sign in to edit.' : 'Could not load the profile. Try again later.';
 else if (stored.value) {
@@ -90,6 +143,18 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => iconLookup?.abort());
 
+async function loadStats() {
+  if (statsLoading.value || loadError.value) return;
+  statsLoading.value = true;
+  try {
+    stats.value = await $fetch('/api/admin/stats', { timeout: 15000, retry: 0 });
+    statsError.value = '';
+  } catch (error) {
+    statsError.value = error.statusCode === 401 ? 'Sign in again to see stats.' : 'Could not load stats. Try Refresh later.';
+  } finally { statsLoading.value = false; }
+}
+onMounted(loadStats);
+
 async function save() {
   if (saving.value || uploadsPending.value > 0) return;
   saving.value = true;
@@ -105,6 +170,7 @@ async function save() {
       data.value.ls.forEach((link, index) => { if (result.favicons[index]) link.fi = result.favicons[index]; });
       await nextTick(); // let the change watcher run while saving, so it is not reported as unsaved
     }
+    void loadStats();
     status.value = unchanged ? 'Saved. View your profile at /; updates can take up to a minute.' : 'Saved earlier changes. You still have unsaved changes.';
   } catch (error) {
     status.value = error.statusCode === 409 ? 'Another tab saved changes. Export your draft before reloading and merging.' : error.data?.statusMessage || 'Save failed. Your draft is still here.';

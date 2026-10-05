@@ -21,3 +21,13 @@ The `/admin` editor can attach PNG, JPEG or WebP files up to 2 MB through the ow
 Uploading stores the image immediately, but attaching or removing it from the public profile still requires Save. Removing an image from a link does not delete its Blob. Unused uploads have no automatic cleanup and can contribute to Blob charges. Upload only images you have permission to publish, never confidential material. Profile-history JSON copies reference the images rather than backing up their bytes.
 
 No Supabase project or charge is required. Blob usage may still be charged under the existing Vercel plan. The saved editor and homepage switch are separate production deployments. Commit, push and deployment each require explicit authorization; local changes do not update the live domain.
+
+## Visits and clicks
+
+The `/admin` editor shows a **Visits and clicks** panel with totals for the last 7 days, last 30 days and all time. It covers profile visits, each link, and each social icon. Counts are kept in a free Upstash Redis database connected through the Vercel Marketplace. The app reads `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`), which the integration sets as server-only variables. Without them the public page works normally and the panel says counting is not connected.
+
+- A visit is counted when the public page at `/` loads in a browser that runs scripts. A click is counted when a visitor clicks or middle-clicks a link or social icon there. Old `/1?data=` links, the editor preview and import preview are not counted.
+- The owner's own visits while signed in, requests that identify as bots or link previewers, and cross-site requests are skipped. Ad blockers may hide some events. Anyone can still send fake events by scripting requests, so treat the numbers as approximate trends.
+- Clicks are stored per link address (a short hash of the URL) and per UTC day. Only addresses on the saved profile are counted; the list updates on each Save and when the panel loads. Changing a link's address starts a new count; renaming or moving it keeps the count. Two links with the same address share one count.
+- No IP address, cookie, browser details or other visitor information is stored.
+- The free plan allows 500,000 database commands a month; each visit or click uses one. If the limit is reached, counting pauses but the public profile is unaffected, because the profile is stored separately in Blob.

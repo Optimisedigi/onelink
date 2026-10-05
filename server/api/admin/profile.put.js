@@ -5,6 +5,7 @@ import { validateProfile } from '../../utils/profileValidation.js';
 import { readBoundedJson } from '../../utils/readBoundedJson.js';
 import { saveProfile } from '../../utils/blobProfile.js';
 import { addDiscoveredFavicons } from '../../utils/discoverFavicon.js';
+import { analyticsClient, syncTrackedLinks } from '../../utils/analytics.js';
 
 export default defineEventHandler(async (event) => {
   checkMutation(event);
@@ -19,5 +20,13 @@ export default defineEventHandler(async (event) => {
   // Discovered icon URLs could exceed field limits; drop any that fail validation.
   if (validateProfile(profile)) for (const link of profile.ls) delete link.fi;
   const saved = await saveProfile(profile, body.expectedVersion);
+  // Let clicks on newly saved links count. Failure only delays counting until
+  // the stats are next opened, so it never fails the Save.
+  const redis = analyticsClient();
+  if (redis) {
+    const started = Date.now();
+    try { await syncTrackedLinks(redis, profile); }
+    catch (error) { console.error(JSON.stringify({ operation: 'stats-link-sync', outcome: 'failed', error: error?.name, elapsedMs: Date.now() - started })); }
+  }
   return { ...saved, favicons: profile.ls.map((link) => link.fi || '') };
 });

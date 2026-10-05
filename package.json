@@ -16,6 +16,7 @@
     "nuxt": "^4.5.2"
   },
   "dependencies": {
+    "@upstash/redis": "1.39.0",
     "@vercel/blob": "2.8.0",
     "js-base64": "^3.9.4",
     "vuedraggable": "^4.1.0"

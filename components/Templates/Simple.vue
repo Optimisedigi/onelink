@@ -24,6 +24,8 @@
           :title="social.label"
           target="_blank"
           rel="noopener noreferrer"
+          @click="opened(social.href)"
+          @auxclick="$event.button === 1 && opened(social.href)"
         ><Icon :name="social.icon" class="social-icon" aria-hidden="true" /></a>
       </nav>
 
@@ -40,6 +42,7 @@
               :icon="typeof link.i === 'string' ? link.i : ''"
               :site-icon="typeof link.fi === 'string' ? link.fi : ''"
               :url="link.u"
+              @open="opened"
             />
           </ul>
         </div>
@@ -49,14 +52,21 @@
   </main>
 </template>
 <script setup>
-import { safeEmailHref, safeHttpsUrl, safeWhatsappHref } from "../../utils/safeLinks";
+import { safeHttpsUrl } from "../../utils/safeLinks";
+import { profileSocialLinks, profileVisibleLinks } from "../../utils/profileLinks";
+import { trackEvent } from "../../utils/trackEvent";
 
 const props = defineProps({
   acc: {
     type: Object,
     required: true,
   },
+  // Count link clicks; only the saved public profile turns this on.
+  trackClicks: { type: Boolean, default: false },
 });
+function opened(href) {
+  if (props.trackClicks) trackEvent({ type: "click", href });
+}
 
 const safeImage = computed(() => safeHttpsUrl(props.acc.i));
 const initials = computed(() => {
@@ -64,9 +74,7 @@ const initials = computed(() => {
   const words = props.acc.n.trim().split(/\s+/).filter(Boolean);
   return words.length ? `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ""}`.toUpperCase() : "?";
 });
-const links = computed(() => Array.isArray(props.acc.ls)
-  ? props.acc.ls.filter((link) => link && typeof link === "object" && typeof link.l === "string" && safeHttpsUrl(link.u))
-  : []);
+const links = computed(() => profileVisibleLinks(props.acc));
 const linkGroups = computed(() => {
   const groups = [];
   for (const link of links.value) {
@@ -78,17 +86,7 @@ const linkGroups = computed(() => {
   return groups;
 });
 const year = new Date().getFullYear();
-const socialLinks = computed(() => [
-  { label: "Facebook", icon: "ph:facebook-logo", href: safeHttpsUrl(props.acc.f) },
-  { label: "X", icon: "ph:x-logo", href: safeHttpsUrl(props.acc.t) },
-  { label: "Instagram", icon: "ph:instagram-logo", href: safeHttpsUrl(props.acc.ig) },
-  { label: "Telegram", icon: "ph:telegram-logo", href: safeHttpsUrl(props.acc.tg) },
-  { label: "WhatsApp", icon: "ph:whatsapp-logo", href: safeWhatsappHref(props.acc.w) },
-  { label: "YouTube", icon: "ph:youtube-logo", href: safeHttpsUrl(props.acc.y) },
-  { label: "Email", icon: "ph:envelope", href: safeEmailHref(props.acc.e) || safeHttpsUrl(props.acc.m) },
-  { label: "GitHub", icon: "ph:github-logo", href: safeHttpsUrl(props.acc.gh) },
-  { label: "LinkedIn", icon: "ph:linkedin-logo", href: safeHttpsUrl(props.acc.l) },
-].filter((social) => social.href));
+const socialLinks = computed(() => profileSocialLinks(props.acc));
 </script>
 <style scoped>
 @font-face {

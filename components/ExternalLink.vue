@@ -1,7 +1,10 @@
 <template>
   <li v-if="label && safeUrl">
     <div class="link-row" :class="{ 'has-description': hasDescription, expanded }">
-      <a :href="safeUrl" target="_blank" rel="noopener noreferrer" class="link-target">
+      <a
+        :href="safeUrl" target="_blank" rel="noopener noreferrer" class="link-target"
+        @click="emit('open', safeUrl)" @auxclick="$event.button === 1 && emit('open', safeUrl)"
+      >
         <span class="link-visual" aria-hidden="true">
           <img
             v-if="imageSource"
@@ -52,6 +55,7 @@ const props = defineProps({
   siteIcon: { type: String, default: "" },
   url: { type: String, required: true },
 });
+const emit = defineEmits(["open"]);
 
 const safeUrl = computed(() => safeHttpsUrl(props.url));
 const safeImage = computed(() => safeHttpsUrl(props.image));

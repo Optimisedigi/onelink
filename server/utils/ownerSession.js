@@ -45,6 +45,11 @@ export function requireOwner(event) {
     throw createError({ statusCode: 401, statusMessage: 'Session expired' });
   }
 }
+// Non-throwing check, e.g. to skip counting the owner's own visits.
+export function isOwner(event) {
+  try { requireOwner(event); return true; }
+  catch { return false; }
+}
 export function revokeOwnerSession(event) {
   deleteCookie(event, name, cookieOptions(event));
   setHeader(event, 'Cache-Control', 'private, no-store');
